@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>問題・解答・画像一覧</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f8f9fa; }
+        table { background-color: white; }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            vertical-align: top;
+            /* 改行を反映させる重要な設定 */
+            white-space: pre-wrap; 
+            word-wrap: break-word;
+        }
+        th { background-color: #e9ecef; width: 30%; }
+        .col-memo { width: 40%; }
+        /* 画像のスタイル */
+        .q-image {
+            max-width: 100%;
+            height: auto;
+            margin-top: 10px;
+            border-radius: 4px;
+            display: block;
+        }
+        .answer-cell { cursor: pointer; transition: background 0.2s; }
+        .answer-cell:hover { background-color: #f1f3f5; }
+        .hidden-text { color: #adb5bd; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="my-4">問題・解答一覧</h1>
+
+    <div class="mb-4">
+        <label for="jsonFile" class="form-label">JSONファイルを選択してください</label>
+        <input type="file" id="jsonFile" class="form-control" accept=".json">
+    </div>
+
+    <table id="targetTable" class="table table-bordered d-none">
+        <thead>
+            <tr>
+                <th>問題</th>
+                <th>解答</th>
+                <th class="col-memo">メモ</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<script>
+document.getElementById('jsonFile').addEventListener('change', function (event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            displayData(data);
+        } catch (err) {
+            alert('JSONの形式が正しくありません。');
+            console.error(err);
+        }
+    };
+    reader.readAsText(file, 'UTF-8');
+});
+
+const displayData = (data) => {
+    const table = document.getElementById('targetTable');
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = ''; // クリア
+    table.classList.remove('d-none');
+
+    data.forEach(item => {
+        const tr = document.createElement('tr');
+
+        // --- 問題列 ---
+        const tdQuestion = document.createElement('td');
+        // テキスト部分
+        const qText = document.createElement('div');
+        qText.textContent = item.question || '';
+        tdQuestion.appendChild(qText);
+        
+        // 画像部分 (URLがある場合のみ生成)
+        if (item.image_url) {
+            const img = document.createElement('img');
+            img.src = item.image_url;
+            img.className = 'q-image';
+            img.alt = '問題画像';
+            // 読み込みエラー時の処理
+            img.onerror = () => { img.style.display = 'none'; };
+            tdQuestion.appendChild(img);
+        }
+        tr.appendChild(tdQuestion);
+
+        // --- 解答列 ---
+        const tdAnswer = document.createElement('td');
+        const answerText = item.answer || '';
+        tdAnswer.className = 'answer-cell hidden-text';
+        tdAnswer.textContent = '（クリックで表示）';
+        
+        let isVisible = false;
+        tdAnswer.addEventListener('click', () => {
+            isVisible = !isVisible;
+            if (isVisible) {
+                tdAnswer.textContent = answerText;
+                tdAnswer.classList.remove('hidden-text');
+            } else {
+                tdAnswer.textContent = '（クリックで表示）';
+                tdAnswer.classList.add('hidden-text');
+            }
+        });
+        tr.appendChild(tdAnswer);
+
+        // --- メモ列 ---
+        const tdMemo = document.createElement('td');
+        tdMemo.innerHTML = `<textarea class="form-control" rows="5" placeholder="メモを入力...">${item.memo || ''}</textarea>`;
+        tr.appendChild(tdMemo);
+
+        tbody.appendChild(tr);
+    });
+};
+</script>
+
+</body>
+</html>
